@@ -1,0 +1,13 @@
+rank_bm25
+sentence-transformers
+lightgbm
+remotezip
+rapidfuzz
+sqlglot
+pandas
+pyarrow
+huggingface_hub
+func_timeout
+scikit-learn
+numpy
+torch
