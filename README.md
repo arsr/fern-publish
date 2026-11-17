@@ -62,13 +62,50 @@ restart.
 
 ## Data
 
-No data is included. `main.py` downloads BIRD, Spider and Fiben from their public sources. BEAVER must be obtained from
-its authors' public release and placed in `BEAVER_DIR`. Please follow each benchmark's licence.
+No data is included; follow each benchmark's licence. `main.py` downloads:
+
+| Data | Source used by `main.py` |
+|---|---|
+| BIRD dev and train | the official archives at `bird-bench.oss-cn-beijing.aliyuncs.com` |
+| Spider | the Hugging Face dataset `HAL-9001/spider-databases`, a community copy of Spider that includes its databases |
+| Fiben | `git clone --depth 1` of `github.com/IBM/fiben-benchmark` |
+
+BEAVER is gated, so it is downloaded once by hand: accept the terms of the Hugging Face datasets
+`beaverbench/beaver-query` and `beaverbench/beaver-table`, then, with your token in `HF_TOKEN`,
+
+```
+python -c "from huggingface_hub import snapshot_download as s; import os
+for r in ('beaverbench/beaver-query', 'beaverbench/beaver-table'):
+    s(r, repo_type='dataset', token=os.environ['HF_TOKEN'], local_dir='<BEAVER_DIR>/' + r.split('/')[1])"
+python v2/schema_keys.py --data <BEAVER_DIR> --out <DIR>      # optional: declared foreign keys -> <DIR>/schema_keys.json
+```
+
+`main.py` finds the parquet files anywhere under `BEAVER_DIR`.
+
+## Reproducibility
+
+**Exact code.** `main.py` is the authors' final cell, published unchanged. It is written for Google
+Colab (it mounts Google Drive and expects a GPU), so it runs there as published.
+
+**What is fixed.** The method has no tuning on any test set, the rankers are fitted once on BIRD train, and the random
+parts are seeded (LightGBM, PCA, the bootstrap and the question samples all use fixed seeds).
+
+**What can move.** Three things are not pinned, so a rerun can differ slightly from the paper:
+
+- *Package versions.* The cell installs the current versions of its packages each time it runs, and the versions used
+  for the paper (Google Colab, November 2026) were not recorded. A newer sentence-transformers, LightGBM or sqlglot
+  can shift scores, rankings or parsed gold tables.
+- *Data snapshots.* Fiben is cloned at its latest commit and Spider comes from a community mirror; neither is pinned to
+  a revision.
+- *Numerics.* Embeddings computed on a GPU, and LightGBM run with many threads, are not bit-for-bit repeatable, and
+  ties in a ranking can then break differently.
+
+A rerun should therefore reproduce the paper's conclusions and land within its confidence intervals, not every digit.
 
 ## Results
 
-The paper reports every result. Per-question outputs are written to `OUT_DIR` when the cell runs
-(`FINAL.txt` and the review-analysis report).
+When the cell runs, it writes its reports to `OUT_DIR`: `FINAL.txt` (every test set, scored once) and `ANALYSIS.txt`
+(the review analyses reported in the paper).
 
 ## Citation
 
@@ -83,7 +120,9 @@ The paper reports every result. Per-question outputs are written to `OUT_DIR` wh
 
 ## Related work by the same authors
 
-NIFT-SQL (arXiv:2611.12731) studies the complementary case: models trained on the target customer's own questions.
+NIFT-SQL (arXiv:2611.12731; code: https://github.com/arsr/nift-sql-publish) studies the complementary case: models
+trained on the target customer's own questions. FERN's two BEAVER comparison rows from the NIFT-SQL holdout come from
+that repository (`experiments/confirm_beaver_v3.py`, `results/paper/CONFIRM.txt`).
 
 ## Licence
 
